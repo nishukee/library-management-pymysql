@@ -8,32 +8,32 @@ class Book_menu:
     def __init__(self, parent):
         self.bm = parent
         #Add Book widgets
-        self.add_book_frame = tk.Frame(parent)
-        self.book_name_lbl = tk.Label(self.add_book_frame, text="Book Name")
-        self.book_author_lbl = tk.Label(self.add_book_frame, text="Author")
-        self.book_isbn_lbl = tk.Label(self.add_book_frame, text="ISBN")
-        self.book_price_lbl = tk.Label(self.add_book_frame, text="Price")
+        self.add_book_frame = tk.Frame(parent, bg='#7a3b0b')
+        self.book_name_lbl = tk.Label(self.add_book_frame, text="Book Name", bg='#7a3b0b', font=('FreeSans',14))
+        self.book_author_lbl = tk.Label(self.add_book_frame, text="Author", bg='#7a3b0b', font=('FreeSans',14))
+        self.book_isbn_lbl = tk.Label(self.add_book_frame, text="ISBN", bg='#7a3b0b', font=('FreeSans',14))
+        self.book_price_lbl = tk.Label(self.add_book_frame, text="Price", bg='#7a3b0b', font=('FreeSans',14))
         self.book_name = ""
-        self.book_name_entry = tk.Entry(self.add_book_frame)
+        self.book_name_entry = tk.Entry(self.add_book_frame, bg='#4a2910')
         self.author = ""
-        self.book_author_entry = tk.Entry(self.add_book_frame)
+        self.book_author_entry = tk.Entry(self.add_book_frame, bg='#4a2910')
         self.isbn = ""
-        self.book_isbn_entry = tk.Entry(self.add_book_frame)
+        self.book_isbn_entry = tk.Entry(self.add_book_frame, bg='#4a2910')
         self.price = ""
-        self.book_price_entry = tk.Entry(self.add_book_frame)
-        self.submit_btn = tk.Button(self.add_book_frame, text="Submit",command=self.book_to_database)
+        self.book_price_entry = tk.Entry(self.add_book_frame, bg='#4a2910')
+        self.submit_btn = tk.Button(self.add_book_frame, text="Submit",command=self.book_to_database, bg='#512202', activebackground='#4a2910')
 
     def add_book_window(self):
-        self.add_book_frame.grid(row=0, column=0, padx=10, pady=10)
-        self.book_name_lbl.grid(row=1, column=1)
-        self.book_author_lbl.grid(row=2,column=1)
-        self.book_isbn_lbl.grid(row=3,column=1)
-        self.book_price_lbl.grid(row=4,column=1)
-        self.book_name_entry.grid(row=1, column=2)
-        self.book_author_entry.grid(row=2, column=2)
-        self.book_isbn_entry.grid(row=3, column=2)
-        self.book_price_entry.grid(row=4, column=2)
-        self.submit_btn.grid(row=6, column=2)
+        self.add_book_frame.grid(row=1, column=1, padx=40, pady=50, ipadx=30)
+        self.book_name_lbl.grid(row=2, column=1, ipadx=3)
+        self.book_author_lbl.grid(row=3,column=1, ipadx=3)
+        self.book_isbn_lbl.grid(row=4,column=1, ipadx=3)
+        self.book_price_lbl.grid(row=5,column=1, ipadx=3)
+        self.book_name_entry.grid(row=2, column=3, ipadx=40)
+        self.book_author_entry.grid(row=3, column=3, ipadx=40)
+        self.book_isbn_entry.grid(row=4, column=3, ipadx=40)
+        self.book_price_entry.grid(row=5, column=3, ipadx=40)
+        self.submit_btn.grid(row=7, column=2)
 
     def book_to_database(self):
         self.book_name = self.book_name_entry.get()
@@ -57,7 +57,7 @@ class MainWindow:
         self.parent.title('Library')
         self.parent.resizable(False, False)
         self.bg_image = Image.open('Book_shelf.png')
-        self.bg_image = self.bg_image.resize((600, 300), Image.ANTIALIAS)
+        self.bg_image = self.bg_image.resize((600,300), Image.ANTIALIAS)
         self.img = ImageTk.PhotoImage(self.bg_image)
         self.main_frame = tk.Frame(parent)
         self.bg_img_lbl = tk.Label(image=self.img)
@@ -92,19 +92,13 @@ class MainWindow:
         self.bg_img_lbl.place(anchor='nw')
 
     def add_book(self):
-        self.hide_all_frames()
         self.book.add_book_window()
-
-    def hide_all_frames(self):
-        self.main_frame.grid_forget()
 
 
 def main():
     root = tk.Tk()
     root.geometry('600x300')
     root.configure(background='#301806')
-    # root.overrideredirect(1)
-    # root.attributes('-topmost', True)
     app = MainWindow(root)
     app.main_window()
     root.mainloop()
