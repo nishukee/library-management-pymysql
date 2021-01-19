@@ -2,6 +2,11 @@ import sqlite3 as s3
 
 def add_book_sql(book_name,book_author,book_isbn,book_price):
     con = check_table()
+    con.execute("INSERT INTO book (book_name,book_author,isbn,price) \
+                    VALUES ('"+book_name+"','"+book_author+"','"+book_isbn+"',"+book_price+");")
+    con.commit()
+    con.close()
+    return True
     
 
 def check_table():
@@ -15,7 +20,12 @@ def check_table():
 	                    price	real NOT NULL,
 	                    status	text NOT NULL DEFAULT 'Available',
 	                    PRIMARY KEY(book_id AUTOINCREMENT));""")
-    except Error as e:
-        print(e)
+    except:
+        print("No database found")
     else:
         return conn
+con=check_table()
+cur = con.execute("SELECT * FROM book;")
+for row in cur:
+    print(row)
+con.close()

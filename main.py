@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 # import tkinter.ttk as tkk
 from PIL import ImageTk, Image
+import sqllink as sql3
 
 class Book_menu:
 
@@ -41,7 +42,10 @@ class Book_menu:
         self.isbn = self.book_isbn_entry.get()
         self.price = self.book_price_entry.get()
         messagebox.showinfo("Connecting to Database","Writing Book Details to Database")
-        print(self.book_name+" "+self.author+" "+self.isbn+" "+self.price)
+        if (sql3.add_book_sql(self.book_name,self.author,self.isbn,self.price)):
+            messagebox.showinfo("SQL Connected","Data Inserted Succesfully!")
+        else:
+            messagebox.showerror("Connection Unsuccesful","Database not found")
         self.clear_entry()
     
     def clear_entry(self):
