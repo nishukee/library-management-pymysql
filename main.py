@@ -1,15 +1,17 @@
 import tkinter as tk
 from tkinter import messagebox
-# import tkinter.ttk as tkk
+from tkinter import ttk
 from PIL import ImageTk, Image
 import sqllink as sql3
 
-class Book_menu:
+class Book_Register:
 
-    def __init__(self, parent):
-        self.bm = parent
+    def declare_book_reg_widgets(self):
+        self.breg = tk.Tk()
+        self.breg.title('Book Register')
+        self.breg.resizable(False, False)
         #Add Book widgets
-        self.add_book_frame = tk.Frame(parent, bg='#7a3b0b')
+        self.add_book_frame = tk.Frame(self.breg, bg='#7a3b0b')
         self.book_name_lbl = tk.Label(self.add_book_frame, text="Book Name", bg='#7a3b0b', font=('FreeSans',14))
         self.book_author_lbl = tk.Label(self.add_book_frame, text="Author", bg='#7a3b0b', font=('FreeSans',14))
         self.book_isbn_lbl = tk.Label(self.add_book_frame, text="ISBN", bg='#7a3b0b', font=('FreeSans',14))
@@ -23,9 +25,14 @@ class Book_menu:
         self.price = ""
         self.book_price_entry = tk.Entry(self.add_book_frame, bg='#4a2910')
         self.submit_btn = tk.Button(self.add_book_frame, text="Submit",command=self.book_to_database, bg='#512202', activebackground='#4a2910')
+        self.quit_breg_btn = tk.Button(self.add_book_frame, text="Quit", command=self.breg.destroy, bg='#512202', activebackground='red')
+
+    #Methods for regisering book to database
 
     def add_book_window(self):
-        self.add_book_frame.grid(row=1, column=1, padx=40, pady=50, ipadx=30)
+        self.declare_book_reg_widgets()
+        self.breg.lift()
+        self.add_book_frame.grid(row=0, column=0, sticky='nsew')
         self.book_name_lbl.grid(row=2, column=1, ipadx=3)
         self.book_author_lbl.grid(row=3,column=1, ipadx=3)
         self.book_isbn_lbl.grid(row=4,column=1, ipadx=3)
@@ -34,7 +41,8 @@ class Book_menu:
         self.book_author_entry.grid(row=3, column=3, ipadx=40)
         self.book_isbn_entry.grid(row=4, column=3, ipadx=40)
         self.book_price_entry.grid(row=5, column=3, ipadx=40)
-        self.submit_btn.grid(row=7, column=2)
+        self.submit_btn.grid(row=7, column=2, sticky='s')
+        self.quit_breg_btn.grid(row=7, column=3, sticky='s')
 
     def book_to_database(self):
         self.book_name = self.book_name_entry.get()
@@ -42,7 +50,9 @@ class Book_menu:
         self.isbn = self.book_isbn_entry.get()
         self.price = self.book_price_entry.get()
         messagebox.showinfo("Connecting to Database","Writing Book Details to Database")
-        if (sql3.add_book_sql(self.book_name,self.author,self.isbn,self.price)):
+        if (len(self.book_name_entry.get())==0 or len(self.book_author_entry.get())==0 or len(self.book_isbn_entry.get())==0 or len(self.book_price_entry.get())==0):
+            messagebox.showerror("Value Error","Please Enter All Values")
+        elif (sql3.add_book_sql(self.book_name,self.author,self.isbn,self.price)):
             messagebox.showinfo("SQL Connected","Data Inserted Succesfully!")
         else:
             messagebox.showerror("Connection Unsuccesful","Database not found")
@@ -53,6 +63,41 @@ class Book_menu:
         self.book_author_entry.delete(0,tk.END)
         self.book_isbn_entry.delete(0,tk.END)
         self.book_price_entry.delete(0,tk.END)
+
+
+class Book_View:
+
+    def declare_view_widgets(self):
+        self.view_window = tk.Tk()
+        self.view_window.title('Books Table')
+        self.view_window.resizable(False, False)
+         #View Book widgets
+        self.view_book_frame = tk.Frame(self.view_window)
+        self.cols = ('Book ID','Book Name','Author','ISBN','Price','Status')
+        self.list_books = ttk.Treeview(self.view_book_frame, columns=self.cols, show='headings', selectmode='browse')
+        self.verscrlbar = ttk.Scrollbar(self.view_book_frame, orient=tk.VERTICAL,command=self.list_books.yview)
+        self.quit_view_btn = tk.Button(self.view_book_frame, text="Quit View", command=self.view_window.destroy)
+        for self.col in self.cols:
+            self.list_books.heading(self.col, text=self.col)
+        self.book_details = []
+        self.index = self.iid = 0
+    
+        #Methods for Viewing Book List
+
+    def view_book_window(self):
+        self.declare_view_widgets()
+        self.view_window.lift()
+        self.book_details = sql3.get_book_details()
+        self.view_book_frame.grid(row=0, column=0, sticky='nsew')
+        self.list_books.grid(row=1, column=1, columnspan=6)
+        for self.i in self.list_books.get_children():
+            self.list_books.delete(self.i)
+        for self.row in self.book_details:
+            self.list_books.insert('',self.index,self.iid,values=self.row)
+            self.index = self.iid = self.index + 1
+        self.verscrlbar.grid(row=1,column=0, sticky='ns')
+        self.list_books.configure(yscrollcommand = self.verscrlbar.set)
+        self.quit_view_btn.grid(row=4,column=3)
 
 class MainWindow:
 
@@ -69,9 +114,9 @@ class MainWindow:
         self.parent.config(menu=self.menuBar)
 
         self.bookOp_menu = tk.Menu(self.menuBar, bg='#4a2910', activebackground='#663109')
-        self.menuBar.add_cascade(label="Book Options", menu=self.bookOp_menu)
-        self.bookOp_menu.add_command(label="Add Books to Database", command=self.add_book)
-        self.bookOp_menu.add_command(label="View Book List")
+        self.menuBar.add_cascade(label="Books", menu=self.bookOp_menu)
+        self.bookOp_menu.add_command(label="Register Books to Database", command=self.add_book)
+        self.bookOp_menu.add_command(label="View Book List", command=self.view_book)
         self.bookOp_menu.add_command(label="Delete Books from Database")
         self.bookOp_menu.add_command(label="Book Status")
 
@@ -88,7 +133,8 @@ class MainWindow:
         self.quit_btn = tk.Menu(self.menuBar, bg='#4a2910', activebackground='red')
         self.menuBar.add_cascade(label="Quit", menu=self.quit_btn)
         self.quit_btn.add_command(label="Exit Program", command=quit)
-        self.book = Book_menu(parent)
+        self.book_reg = Book_Register()
+        self.book_view = Book_View()
     
     def main_window(self):
 
@@ -96,7 +142,10 @@ class MainWindow:
         self.bg_img_lbl.place(anchor='nw')
 
     def add_book(self):
-        self.book.add_book_window()
+        self.book_reg.add_book_window()
+    
+    def view_book(self):
+        self.book_view.view_book_window()
 
 
 def main():

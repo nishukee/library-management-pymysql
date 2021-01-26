@@ -7,7 +7,14 @@ def add_book_sql(book_name,book_author,book_isbn,book_price):
     con.commit()
     con.close()
     return True
-    
+
+def get_book_details():
+    con = check_table()
+    books_obj = con.execute('Select * from book;')
+    books = []
+    for row in books_obj:
+        books.append(row)
+    return books
 
 def check_table():
     try:
