@@ -1,9 +1,11 @@
 import sqlite3 as s3
+import random as r
 
 def add_book_sql(book_name,book_author,book_isbn,book_price):
     con = check_table()
-    con.execute("INSERT INTO book (book_name,book_author,isbn,price) \
-                    VALUES ('"+book_name+"','"+book_author+"','"+book_isbn+"',"+book_price+");")
+    book_id = book_name[0:2].upper()+"-"+book_author[0:2].upper()+"-"+book_isbn[0:2]+"-"+str(r.randint(100,999))
+    con.execute("INSERT INTO book (book_id,book_name,book_author,isbn,price) \
+                    VALUES ('"+book_id+"',"+"'"+book_name+"','"+book_author+"','"+book_isbn+"',"+book_price+");")
     con.commit()
     con.close()
     return True
@@ -16,17 +18,36 @@ def get_book_details():
         books.append(row)
     return books
 
+def get_del_book_details():
+    con = check_table()
+    books_del_obj = con.execute('Select book_id,book_name from book;')
+    del_books = {}
+    del_book_id = []
+    for row in books_del_obj:
+        del_books[row[0]] = row[1]
+        del_book_id = row[0]
+    return del_book_id, del_books
+
+def delete_book(book_id_str):
+    con = check_table()
+    try:
+        con.execute("Delete from book where book_id = '"+book_id_str+"';")
+        con.commit()
+        return True
+    except:
+        return False
+
 def check_table():
     try:
         conn = s3.connect('library.db')
         conn.execute("""CREATE TABLE IF NOT EXISTS book(
-                        book_id	integer NOT NULL,
+                        book_id	text NOT NULL,
 	                    book_name	text NOT NULL,
 	                    book_author	text NOT NULL,
 	                    isbn	text NOT NULL,
 	                    price	real NOT NULL,
 	                    status	text NOT NULL DEFAULT 'Available',
-	                    PRIMARY KEY(book_id AUTOINCREMENT));""")
+	                    PRIMARY KEY(book_id));""")
     except:
         print("No database found")
     else:

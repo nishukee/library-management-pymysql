@@ -63,20 +63,22 @@ class Book_Register:
         self.book_author_entry.delete(0,tk.END)
         self.book_isbn_entry.delete(0,tk.END)
         self.book_price_entry.delete(0,tk.END)
+        self.breg.destroy()
+        self.add_book_window()
 
 
 class Book_View:
 
     def declare_view_widgets(self):
-        self.view_window = tk.Tk()
-        self.view_window.title('Books Table')
-        self.view_window.resizable(False, False)
+        self.bview = tk.Tk()
+        self.bview.title('Books Table')
+        self.bview.resizable(False, False)
          #View Book widgets
-        self.view_book_frame = tk.Frame(self.view_window)
+        self.view_book_frame = tk.Frame(self.bview)
         self.cols = ('Book ID','Book Name','Author','ISBN','Price','Status')
         self.list_books = ttk.Treeview(self.view_book_frame, columns=self.cols, show='headings', selectmode='browse')
         self.verscrlbar = ttk.Scrollbar(self.view_book_frame, orient=tk.VERTICAL,command=self.list_books.yview)
-        self.quit_view_btn = tk.Button(self.view_book_frame, text="Quit View", command=self.view_window.destroy)
+        self.quit_view_btn = tk.Button(self.view_book_frame, text="Quit View", command=self.bview.destroy)
         for self.col in self.cols:
             self.list_books.heading(self.col, text=self.col)
         self.book_details = []
@@ -86,7 +88,7 @@ class Book_View:
 
     def view_book_window(self):
         self.declare_view_widgets()
-        self.view_window.lift()
+        self.bview.lift()
         self.book_details = sql3.get_book_details()
         self.view_book_frame.grid(row=0, column=0, sticky='nsew')
         self.list_books.grid(row=1, column=1, columnspan=6)
@@ -98,6 +100,55 @@ class Book_View:
         self.verscrlbar.grid(row=1,column=0, sticky='ns')
         self.list_books.configure(yscrollcommand = self.verscrlbar.set)
         self.quit_view_btn.grid(row=4,column=3)
+
+class Book_Delete:
+    def declare_book_delete_widgets(self):
+        self.bdel = tk.Tk()
+        self.bdel.title('Delete Books')
+        self.bdel.resizable(False, False)
+        self.retrieve_books()
+        self.book_delete_frame = tk.Frame(self.bdel)
+        self.book_id_str = tk.StringVar()
+        self.combo_box = ttk.Combobox(self.book_delete_frame, width=27, textvariable = self.book_id_str, values=self.bookids)
+        self.combo_box.set('Pick Book ID')
+        self.book_name_str = tk.StringVar()
+        self.del_book_entry = tk.Entry(self.book_delete_frame, textvariable=self.book_name_str)
+        self.del_book_entry.insert(0, 'Book Name')
+        self.chk_book_btn = tk.Button(self.book_delete_frame, text="Check Book Name", command=self.check_book)
+        self.del_btn = tk.Button(self.book_delete_frame, text="Delete", command=self.book_delete)
+        self.quit_del_btn = tk.Button(self.book_delete_frame, text="Quit", command=self.bdel.destroy)
+    
+    def retrieve_books(self):
+        self.bookids, self.bookdict = sql3.get_del_book_details()
+    
+    def delete_book_window(self):
+        self.declare_book_delete_widgets()
+        self.bdel.lift()
+        self.book_delete_frame.grid(row=0, column=0)
+        self.combo_box.grid(row=2, column=1)
+        self.del_book_entry.grid(row=2, column=3)
+        self.chk_book_btn.grid(row=4, column=2)
+        self.del_btn.grid(row=4, column=3)
+        self.quit_del_btn.grid(row=4, column=4)
+
+    def check_book(self):
+        if self.combo_box.get()=='Pick Book ID':
+            messagebox.showwarning('Value not selected','Select Book ID')
+        else :
+            self.book_id_str = self.combo_box.get()
+            self.book_name_str = self.bookdict[self.book_id_str]
+            self.del_book_entry.delete(0, tk.END)
+            self.del_book_entry.insert(0, self.book_name_str)
+        
+    def book_delete(self):
+        messagebox.showinfo("Connecting to Database","Deleting Book")
+        if sql3.delete_book(self.book_id_str)==True:
+            messagebox.showinfo('Connection Succesful','Book Deleted')
+            del self.bookdict[self.book_id_str]
+            self.bdel.destroy()
+            self.delete_book_window()
+        else:
+            messagebox.showerror('Connection Unsuccesful','Book not deleted')
 
 class MainWindow:
 
@@ -117,7 +168,7 @@ class MainWindow:
         self.menuBar.add_cascade(label="Books", menu=self.bookOp_menu)
         self.bookOp_menu.add_command(label="Register Books to Database", command=self.add_book)
         self.bookOp_menu.add_command(label="View Book List", command=self.view_book)
-        self.bookOp_menu.add_command(label="Delete Books from Database")
+        self.bookOp_menu.add_command(label="Delete Books from Database", command=self.delete_book)
         self.bookOp_menu.add_command(label="Book Status")
 
         self.bookIsR_menu = tk.Menu(self.menuBar, bg='#4a2910', activebackground='#663109')
@@ -135,6 +186,7 @@ class MainWindow:
         self.quit_btn.add_command(label="Exit Program", command=quit)
         self.book_reg = Book_Register()
         self.book_view = Book_View()
+        self.book_del = Book_Delete()
     
     def main_window(self):
 
@@ -146,6 +198,9 @@ class MainWindow:
     
     def view_book(self):
         self.book_view.view_book_window()
+    
+    def delete_book(self):
+        self.book_del.delete_book_window()
 
 
 def main():
