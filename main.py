@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
+import pandas as pd
 from tkinter import ttk
 from PIL import ImageTk, Image
 import sqllink as sql3
@@ -42,7 +43,6 @@ class Book_Register:
 
     def add_book_window(self):
         self.declare_book_reg_widgets()
-        self.breg.lift()
         self.add_book_frame.grid(row=0, column=0, sticky='nsew', ipadx=5, ipady=5)
         self.book_name_lbl.grid(row=2, column=1, ipadx=3, padx=5)
         self.book_author_lbl.grid(row=3,column=1, ipadx=3, padx=5)
@@ -74,8 +74,12 @@ class Book_Register:
         self.book_author_entry.delete(0,tk.END)
         self.book_isbn_entry.delete(0,tk.END)
         self.book_price_entry.delete(0,tk.END)
+        self.refresh_window_breg()
+
+    def refresh_window_breg(self):    
         self.breg.destroy()
         self.add_book_window()
+        self.breg.lift()
 
 
 class Book_View:
@@ -89,10 +93,11 @@ class Book_View:
         self.view_book_frame = ttk.Frame(self.bview)
         self.cols = ('Book ID','Book Name','Author','ISBN','Price','Status')
         self.list_books = ttk.Treeview(self.view_book_frame, columns=self.cols, show='headings', selectmode='browse')
-        self.verscrlbar = ttk.Scrollbar(self.view_book_frame, orient=tk.VERTICAL, command=self.list_books.yview)
-        self.quit_view_btn = ttk.Button(self.view_book_frame, text="Quit View", command=self.bview.destroy)
         for self.col in self.cols:
             self.list_books.heading(self.col, text=self.col)
+        self.verscrlbar = ttk.Scrollbar(self.view_book_frame, orient=tk.VERTICAL, command=self.list_books.yview)
+        self.export_btn = ttk.Button(self.view_book_frame, text="Export to Excel", command=self.export_to_excel)
+        self.quit_view_btn = ttk.Button(self.view_book_frame, text="Quit View", command=self.bview.destroy)
         self.book_details = []
         self.index = self.iid = 0
     
@@ -100,12 +105,13 @@ class Book_View:
     def widget_styles(self):
         self.s = ttk.Style(self.bview)
         self.s.theme_use('clam')
-        self.s.configure('TFrame', background='silver', foreground='black', fieldbackground='silver')
-        self.s.configure('Treeview', background='silver', foreground='black', fieldbackground='silver')
-        self.s.configure('TScrollbar',background='silver', foreground='black')
+        self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
+        self.s.configure('Treeview', background='#894b10', foreground='white', fieldbackground="#894b10")
+        self.s.configure('TScrollbar',background='#70340c', foreground='white')
         self.s.map('TScollbar',background=[('pressed','white')])
-        self.s.configure('TButton', background="gray", foreground="black")
-        self.s.map('TButton',background=[('active','red'),('pressed','red')])
+        self.s.configure('TButton', background="#894b10", foreground="white")
+        self.s.map('TButton',background=[('active','#70340c'),('pressed','"#894b10')])
+        self.s.configure('.', background='#70340c', foreground='white')
 
     def view_book_window(self):
         self.declare_view_widgets()
@@ -120,7 +126,18 @@ class Book_View:
             self.index = self.iid = self.index + 1
         self.verscrlbar.grid(row=1,column=0, sticky='ns')
         self.list_books.configure(yscrollcommand = self.verscrlbar.set)
-        self.quit_view_btn.grid(row=4,column=3,columnspan=2, padx=20, pady=5)
+        self.export_btn.grid(row=3, column=2, columnspan=2, padx=20, pady=5)
+        self.quit_view_btn.grid(row=3,column=4,columnspan=2, padx=20, pady=5)
+    
+    def refresh_window_bview(self):
+        self.bview.destroy()
+        self.view_book_window()
+        self.bview.lift()
+
+    def export_to_excel(self):
+        self.export_file_path = filedialog.asksaveasfilename(defaultextension='.xlsx')
+        sql3.export_books(self.export_file_path)
+        self.refresh_window_bview()
 
 class Book_Delete:
     def declare_book_delete_widgets(self):
@@ -140,6 +157,7 @@ class Book_Delete:
         self.del_btn = ttk.Button(self.book_delete_frame, text="Delete", command=self.book_delete)
         self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
         self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
+        self.del_all_btn = ttk.Button(self.book_delete_frame, text="Delete All Books", command=self.delete_all_books)
         self.quit_del_btn = ttk.Button(self.book_delete_frame, text="Quit", command=self.bdel.destroy, style='quitbtn.TButton')
     
     def widget_styles(self):
@@ -157,12 +175,12 @@ class Book_Delete:
     
     def delete_book_window(self):
         self.declare_book_delete_widgets()
-        self.bdel.lift()
         self.book_delete_frame.grid(row=0, column=0, ipadx=10)
         self.combo_box.grid(row=2, column=0, padx=10, pady=20)
-        self.del_book_entry.grid(row=2, column=1, pady=20)
-        self.del_btn.grid(row=4, column=0, ipadx=10)
-        self.quit_del_btn.grid(row=4, column=1)
+        self.del_book_entry.grid(row=2, column=1, pady=20, padx=15)
+        self.del_btn.grid(row=2, column=3)
+        self.quit_del_btn.grid(row=4, column=0,columnspan=2, padx=50)
+        self.del_all_btn.grid(row=4, column=3)
             
     def check_book(self, event):
         if self.combo_box.get()!='Pick Book ID':
@@ -180,9 +198,21 @@ class Book_Delete:
                 messagebox.showinfo('Connection Succesful','Book Deleted')
                 del self.bookdict[self.book_id_str]
             else:
-                messagebox.showerror('Connection Unsuccesful','Book not deleted')
+                messagebox.showerror('Connection Unsuccesful','Database is locked')
+        self.refresh_window_bdel()
+
+    def refresh_window_bdel(self):
         self.bdel.destroy()
         self.delete_book_window()
+        self.bdel.lift()
+    
+    def delete_all_books(self):
+        if messagebox.askyesno('Deleting all Records','Are you sure you want to proceed?'):
+            if sql3.delete_all():
+                messagebox.showinfo('Deleted Records','All records deleted successfully')
+            else:
+                messagebox.showerror('Deletion Unsuccessful','Could not delete records')
+        self.refresh_window_bdel()
 
 class MainWindow:
 
@@ -193,7 +223,10 @@ class MainWindow:
         self.s = ttk.Style(self.parent)
         self.s.theme_use('clam')
         self.s.configure('TFrame', background='#70340c', foreground='#70340c', fieldbackground='#70340c')
-        self.s.configure('TLabel', background='#70340c', foreground='#70340c', fieldbackground='#70340c')
+        self.s.configure('.', background='#70340c', foreground='white')
+        self.s.configure('TLabel', background='#70340c', foreground='white')
+        self.s.configure('TButton', background="#894b10", foreground="white")
+        self.s.map('TButton',background=[('active','#a5570e'),('pressed','#70340c')])
         self.bg_image = Image.open('Book_shelf.png')
         self.bg_image = self.bg_image.resize((600,300), Image.ANTIALIAS)
         self.img = ImageTk.PhotoImage(self.bg_image)
