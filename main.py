@@ -5,13 +5,228 @@ from tkinter import ttk
 from PIL import ImageTk, Image
 import sqllink as sql3
 
+class Member_Register:
+
+    def declare_member_reg_widgets(self):
+        self.mreg = tk.Tk()
+        self.mreg.title('Member Register')
+        self.mreg.resizable(False, False)
+        self.widget_styles()
+        self.add_member_frame = ttk.Frame(self.mreg)
+        self.mFname_lbl = ttk.Label(self.add_member_frame, text="First Name")
+        self.mLname_lbl = ttk.Label(self.add_member_frame, text="Last Name")
+        self.mMob_lbl = ttk.Label(self.add_member_frame, text="Mobile")
+        self.mEmail_lbl = ttk.Label(self.add_member_frame, text="Email")
+        self.mAddress_lbl = ttk.Label(self.add_member_frame, text="Address")
+        self.mFname_entry = ttk.Entry(self.add_member_frame)
+        self.mLname_entry = ttk.Entry(self.add_member_frame)
+        self.mMob_entry = ttk.Entry(self.add_member_frame)
+        self.mEmail_entry = ttk.Entry(self.add_member_frame)
+        self.mAddress_entry = tk.Text(self.add_member_frame,width=35, height=4, bg='white', fg='black')
+        self.mFname = ""
+        self.mLname = ""
+        self.mMob = ""
+        self.mEmail = ""
+        self.mAddress = ""
+        self.submit_btn = ttk.Button(self.add_member_frame, text="Submit", command=self.member_to_database)
+        self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
+        self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
+        self.quit_mreg_btn = ttk.Button(self.add_member_frame, text="Quit", command=self.mreg.destroy, style='quitbtn.TButton')
+    
+    def widget_styles(self):
+        self.s = ttk.Style(self.mreg)
+        self.s.theme_use('clam')
+        self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
+        self.s.configure('TLabel',foreground='snow',background='#70340c', font=('FreeSans',14))
+        self.s.configure('TEntry', background='white', foreground='black')
+        self.s.configure('TButton', background="#894b10", foreground="white")
+        self.s.map('TButton',background=[('active','#a5570e'),('pressed','#70340c')])
+    
+    def add_member_window(self):
+        self.declare_member_reg_widgets()
+        self.add_member_frame.grid(row=0, column=0, sticky='nsew', ipadx=5, ipady=5)
+        self.mFname_lbl.grid(row=2, column=1, ipadx=3, padx=5)
+        self.mLname_lbl.grid(row=3, column=1, ipadx=3, padx=5)
+        self.mMob_lbl.grid(row=4, column=1, ipadx=3, padx=5)
+        self.mEmail_lbl.grid(row=5, column=1, ipadx=3, padx=5)
+        self.mAddress_lbl.grid(row=6, column=1, ipadx=3, padx=5)
+        self.mFname_entry.grid(row=2, column=3, ipadx=40,pady=10)
+        self.mLname_entry.grid(row=3, column=3, ipadx=40,pady=10)
+        self.mMob_entry.grid(row=4, column=3, ipadx=40,pady=10)
+        self.mEmail_entry.grid(row=5, column=3, ipadx=40,pady=10)
+        self.mAddress_entry.grid(row=6, column=3,pady=10)
+        self.submit_btn.grid(row=8, column=2, sticky='s')
+        self.quit_mreg_btn.grid(row=8, column=3, sticky='s')
+    
+    def member_to_database(self):
+        self.mFname = self.mFname_entry.get()
+        self.mLname = self.mLname_entry.get()
+        self.mMob = self.mMob_entry.get()
+        self.mEmail = self.mEmail_entry.get()
+        self.mAddress = self.mAddress_entry.get('1.0', tk.END)
+        messagebox.showinfo("Connecting to Database", "Writing Member Details to Database")
+        if len(self.mFname)==0 or len(self.mLname)==0 or len(self.mMob)==0 or len(self.mEmail)==0 or len(self.mAddress)==0:
+            messagebox.showerror("Value Error","Please Enter All Values")
+        elif(sql3.member_reg(self.mFname, self.mLname, self.mMob, self.mEmail, self.mAddress)):
+           messagebox.showinfo("SQL Connected","Data Inserted Succesfully!")
+        else:
+            messagebox.showerror("Connection Unsuccesful","Database not found")
+        self.clear_entry()
+
+    def clear_entry(self):
+        self.mFname_entry.delete(0, tk.END)
+        self.mLname_entry.delete(0, tk.END)
+        self.mMob_entry.delete(0, tk.END) 
+        self.mEmail_entry.delete(0, tk.END)
+        self.mAddress_entry.delete('1.0', tk.END)
+        self.refresh_window_mreg()
+    
+    def refresh_window_mreg(self):
+        self.mreg.destroy()
+        self.add_member_window()
+        self.mreg.lift()
+
+
+class Delete_Member:
+
+    def declare_member_del_widgets(self):
+        self.mdel = tk.Tk()
+        self.mdel.title('Member Delete')
+        self.mdel.register(False, False)
+        self.retieve_members()
+        self.widget_styles()
+        self.member_delete_frame = ttk.Frame(self.mdel)
+        self.member_id_str = tk.StringVar()
+        self.combo_box = ttk.Combobox(self.member_delete_frame, width=27, textvariable=self.member_id_str, values=self.memberids)
+        self.combo_box.set('Pick Member ID')
+        self.combo_box.bind("<<ComboboxSelected>>", self.check_member)
+        self.member_name_str = tk.StringVar()
+        self.del_member_entry = ttk.Entry(self.member_delete_frame, textvariable=self.member_name_str)
+        self.del_member_entry.insert(0, 'Member Name')
+        self.del_btn = ttk.Button(self.member_delete_frame, text="Delete", command=self.member_delete)
+        self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
+        self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
+        self.del_all_btn = ttk.Button(self.member_delete_frame, text="Delete All Members", command=self.delete_all_members)
+        self.quit_del_btn = ttk.Button(self.member_delete_frame, text="Quit", command=self.mdel.destroy, style='quitbtn.TButton')
+    
+    def widget_styles(self):
+        self.s = ttk.Style(self.mdel)
+        self.s.theme_use('clam')
+        self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
+        self.s.configure('TCombobox', background="#894b10", foreground='white')
+        self.s.map('TCombobox',background=[('active','#a5570e'),('pressed','#70340c')])
+        self.s.configure('TEntry', background='white', foreground='black')
+        self.s.configure('TButton', background="#894b10", foreground="white")
+        self.s.map('TButton',background=[('active','#a5570e'),('pressed','#70340c')])
+    
+    def retieve_members(self):
+        self.memberids, self.memberNamedict = sql3.get_del_member_details()
+    
+    def delete_memebr_window(self):
+        self.declare_member_del_widgets()
+        self.member_delete_frame.grid(row=0, column=0, ipadx=10)
+        self.combo_box.grid(row=2, column=0, padx=10, pady=20)
+        self.del_member_entry.grid(row=2, column=1, pady=20, padx=15)
+        self.del_btn.grid(row=2, column=3)
+        self.quit_del_btn.grid(row=4, column=0, columnspan=2, padx=50)
+        self.del_all_btn.grid(row=4, column=3)
+    
+    def check_member(self, event):
+        if self.combo_box.get()!='Pick Member ID':
+            self.member_id_str = self.combo_box.get()
+            self.member_name_str = self.memberNamedict[self.member_id_str]
+            self.del_member_entry.delete(0, tk.END)
+            self.del_member_entry.insert(0, self.member_name_str)
+    
+    def member_delete(self):
+        if self.combo_box.get()=='Pick Member ID':
+            messagebox.showwarning('Value not selected','Select Member ID')
+        else:
+            messagebox.showinfo('Connecting to Database','Deleting Member')
+            if sql3.delete_member(self.member_id_str)==True:
+                messagebox.showinfo('Connection Succesful','Member Deleted')
+                del self.memberNamedict[self.member_id_str]
+            else:
+                messagebox.showerror('Connection UNsuccesful','Database is locked')
+        self.refresh_window_mdel()
+    
+    def refresh_window_mdel(self):
+        self.mdel.destroy()
+        self.delete_memebr_window()
+        self.mdel.lift()
+
+    def delete_all_members(self):
+        if messagebox.askyesno('Deleting all Records','Are you sure you want to proceed?'):
+            if sql3.delete_allm():
+                messagebox.showinfo('Deleted Records','All records deleted successfully')
+            else:
+                messagebox.showerror('Deletion Unsuccessful','Could not delete records')
+        self.refresh_window_mdel()
+
+class Member_View:
+
+    def declare_mview_widgets(self):
+        self.mview = tk.Tk()
+        self.mview.title('Memebrs Table')
+        self.mview.resizable(False, False)
+        self.widget_styles()
+        self.view_member_frame = ttk.Frame(self.mview)
+        self.cols = ('Member ID','Name','Mobile', 'Email', 'Address')
+        self.list_members = ttk.Treeview(self.view_member_frame, columns=self.cols, show='headings', selectmode='browse')
+        for self.col in self.cols:
+            self.list_members.heading(self.col, text=self.col)
+        self.list_members.column(self.cols[4], width=500, anchor='w')
+        self.verscrlbar = ttk.Scrollbar(self.view_member_frame, orient=tk.VERTICAL, command=self.list_members.yview)
+        self.export_btn = ttk.Button(self.view_member_frame, text="Export to Excel", command=self.export_to_excel)
+        self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
+        self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
+        self.quit_view_btn = ttk.Button(self.view_member_frame,style='quitbtn.TButton', text="Quit View", command=self.mview.destroy)
+        self.member_details = []
+        self.index = self.iid = 0
+    
+    def widget_styles(self):
+        self.s = ttk.Style(self.mview)
+        self.s.theme_use('clam')
+        self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
+        self.s.configure('Treeview', background='#894b10', foreground='white', fieldbackground="#894b10")
+        self.s.configure('TScrollbar',background='#70340c', foreground='white')
+        self.s.map('TScollbar',background=[('pressed','white')])
+        self.s.configure('TButton', background="#894b10", foreground="white")
+        self.s.map('TButton',background=[('active','#70340c'),('pressed','"#894b10')])
+        self.s.configure('.', background='#70340c', foreground='white')
+    
+    def view_members_window(self):
+        self.declare_mview_widgets()
+        self.mview.lift()
+        self.member_details = sql3.get_member_details()
+        self.view_member_frame.grid(row=0, column=0, sticky='nsew')
+        self.list_members.grid(row=1, column=1, columnspan=6, sticky='nsew')
+        for self.i in self.list_members.get_children():
+            self.list_members.delete(self.i)
+        for self.row in self.member_details:
+            self.list_members.insert('',self.index,self.iid,values=self.row)
+            self.index = self.iid = self.index + 1
+        self.verscrlbar.grid(row=1,column=0, sticky='ns')
+        self.list_members.configure(yscrollcommand = self.verscrlbar.set)
+        self.export_btn.grid(row=3, column=2, columnspan=2, padx=20, pady=5)
+        self.quit_view_btn.grid(row=3,column=4,columnspan=2, padx=20, pady=5)
+
+    def refresh_window_mview(self):
+        self.mview.destroy()
+        self.view_members_window()
+        self.mview.lift()
+    
+    def export_to_excel(self):
+        self.export_file_path = filedialog.asksaveasfilename(defaultextension='.xlsx')
+        sql3.export_members(self.export_file_path)
+        self.refresh_window_mview()
+
 class Book_Register:
 
     def declare_book_reg_widgets(self):
         self.breg = tk.Tk()
         self.breg.title('Book Register')
         self.breg.resizable(False, False)
-        #Add Book widgets
         self.widget_styles()
         self.add_book_frame = ttk.Frame(self.breg)
         self.book_name_lbl = ttk.Label(self.add_book_frame, text="Book Name")
@@ -31,7 +246,6 @@ class Book_Register:
         self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
         self.quit_breg_btn = ttk.Button(self.add_book_frame, text="Quit", command=self.breg.destroy, style='quitbtn.TButton')
 
-    #Methods for regisering book to database
     def widget_styles(self):
         self.s = ttk.Style(self.breg)
         self.s.theme_use('clam')
@@ -88,7 +302,6 @@ class Book_View:
         self.bview = tk.Tk()
         self.bview.title('Books Table')
         self.bview.resizable(False, False)
-         #View Book widgets
         self.widget_styles()
         self.view_book_frame = ttk.Frame(self.bview)
         self.cols = ('Book ID','Book Name','Author','ISBN','Price','Status')
@@ -97,11 +310,12 @@ class Book_View:
             self.list_books.heading(self.col, text=self.col)
         self.verscrlbar = ttk.Scrollbar(self.view_book_frame, orient=tk.VERTICAL, command=self.list_books.yview)
         self.export_btn = ttk.Button(self.view_book_frame, text="Export to Excel", command=self.export_to_excel)
-        self.quit_view_btn = ttk.Button(self.view_book_frame, text="Quit View", command=self.bview.destroy)
+        self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
+        self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
+        self.quit_view_btn = ttk.Button(self.view_book_frame,style='quitbtn.TButton', text="Quit View", command=self.bview.destroy)
         self.book_details = []
         self.index = self.iid = 0
-    
-        #Methods for Viewing Book List
+
     def widget_styles(self):
         self.s = ttk.Style(self.bview)
         self.s.theme_use('clam')
@@ -226,6 +440,7 @@ class MainWindow:
         self.s.configure('.', background='#70340c', foreground='white')
         self.s.configure('TLabel', background='#70340c', foreground='white')
         self.s.configure('TButton', background="#894b10", foreground="white")
+        self.s.configure('TEntry', background='white', foreground='black')
         self.s.map('TButton',background=[('active','#a5570e'),('pressed','#70340c')])
         self.bg_image = Image.open('Book_shelf.png')
         self.bg_image = self.bg_image.resize((600,300), Image.ANTIALIAS)
@@ -249,8 +464,9 @@ class MainWindow:
 
         self.bookMembers_menu = tk.Menu(self.menuBar, bg='#70340c', activebackground='#a5570e', tearoff=0)
         self.menuBar.add_cascade(label="Library Members", menu=self.bookMembers_menu)
-        self.bookMembers_menu.add_command(label="Register New Member")
-        self.bookMembers_menu.add_command(label="Delete Registered Member")
+        self.bookMembers_menu.add_command(label="Register New Member", command=self.member_register)
+        self.bookMembers_menu.add_command(label="Delete Registered Member", command=self.member_delete)
+        self.bookMembers_menu.add_command(label="View Members", command=self.view_member)
 
         self.quit_btn = tk.Menu(self.menuBar, bg='#70340c', activebackground='red', tearoff=0)
         self.menuBar.add_cascade(label="Quit", menu=self.quit_btn)
@@ -258,6 +474,9 @@ class MainWindow:
         self.book_reg = Book_Register()
         self.book_view = Book_View()
         self.book_del = Book_Delete()
+        self.member_reg = Member_Register()
+        self.member_del = Delete_Member()
+        self.member_view = Member_View()
     
     def main_window(self):
 
@@ -272,6 +491,15 @@ class MainWindow:
     
     def delete_book(self):
         self.book_del.delete_book_window()
+    
+    def member_register(self):
+        self.member_reg.add_member_window()
+    
+    def member_delete(self):
+        self.member_del.delete_memebr_window()
+    
+    def view_member(self):
+        self.member_view.view_members_window()
 
 
 def main():

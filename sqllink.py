@@ -67,18 +67,18 @@ def delete_all():
 
 def get_member_details():
     con = check_table()
-    members_obj = con.execute('Select * from members;')
+    members_obj = con.execute("Select member_id, fName || ' ' || lName as 'Full Name', mobile_no, email, address from members;")
     memebrs = []
     for row in members_obj:
         memebrs.append(row)
     con.close()
     return memebrs
 
-def member_reg(fName, lName, mobileno, address, email):
+def member_reg(fName, lName, mobileno, email, address):
     member_id = fName[0:2]+lName[0]+'-'+str(ran.randint(1000,9999))
     con = check_table()
-    con.execute("INSERT INTO members (member_id, fName, lName, mobile_no, address, email) \
-                    VALUES ('"+member_id+"','"+fName+"','"+lName+"','"+mobileno+"','"+address+"','"+email+"');")
+    con.execute("INSERT INTO members (member_id, fName, lName, mobile_no, email,  address) \
+                    VALUES ('"+member_id+"','"+fName+"','"+lName+"','"+mobileno+"','"+email+"','"+address+"');")
     con.commit()
     con.close()
     return True
@@ -103,6 +103,28 @@ def delete_member(member_id_str):
         return True
     except OperationalError:
         return False
+
+def delete_allm():
+    con = check_table()
+    con.execute('Delete from members;')
+    con.commit()
+    con.close()
+    return True
+
+def export_members(export_file_path):
+    con = check_table()
+    dict_books = {'Member ID': [], 'First Name': [], 'Last Name': [], 'Mobile': [], 'E-mail': [], 'Address': []}
+    rows = con.execute('Select * from members;')
+    for row in rows:
+        dict_books['Member ID'].append(row[0])
+        dict_books['First Name'].append(row[1])
+        dict_books['Last Name'].append(row[2])
+        dict_books['Mobile'].append(row[3])
+        dict_books['E-mail'].append(row[4])
+        dict_books['Address'].append(row[5])
+    df = pd.DataFrame(dict_books, columns = ['Member ID', 'First Name', 'Last Name', 'Mobile', 'E-mail', 'Address'])
+    df.to_excel(export_file_path, index=False, header=True)
+    con.close()
 
 def get_issue_details():
     book_id,books = get_del_book_details()
@@ -164,8 +186,8 @@ def check_table():
                         fName text NOT NULL,
                         lName text NOT NULL,
                         mobile_no text NOT NULL,
-                        address text,
                         email text,
+                        address text,
                         PRIMARY KEY(member_id));""")
         conn.execute("""CREATE TABLE IF NOT EXISTS book_status(
                         book_id text NOT NULL,
@@ -180,7 +202,8 @@ def check_table():
     else:
         return conn
 con=check_table()
-cur = con.execute("SELECT * FROM book;")
+#cur = con.execute("SELECT * FROM book;")
+cur = get_member_details()
 for row in cur:
     print(row)
 con.close()
