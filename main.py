@@ -1,9 +1,106 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog
-import pandas as pd
 from tkinter import ttk
 from PIL import ImageTk, Image
 import sqllink as sql3
+
+class Issue:
+
+    def declare_issue_widgets(self):
+        self.iss = tk.Tk()
+        self.iss.title('Issue Book')
+        self.iss.resizable(False, False)
+        self.widget_styles()
+        self.retrieve_values()
+        self.issue_frame = ttk.Frame(self.iss)
+        self.member_id_str = tk.StringVar()
+        self.mem_combobox = ttk.Combobox(self.issue_frame, width=17, textvariable=self.member_id_str, values=self.member_id)
+        self.mem_combobox.set('Pick Member ID')
+        self.mem_combobox.bind("<<ComboboxSelected>>", self.check_member)
+        self.member_name_str = tk.StringVar()
+        self.member_entry = ttk.Entry(self.issue_frame, textvariable=self.member_name_str)
+        self.member_entry.insert(0, 'Member Name')
+        self.book_id_str = tk.StringVar()
+        self.book_combobox = ttk.Combobox(self.issue_frame, width=17, textvariable=self.book_id_str, values=self.book_id)
+        self.book_combobox.set('Pick Book ID')
+        self.book_combobox.bind("<<ComboboxSelected>>", self.check_book)
+        self.book_name_str = tk.StringVar()
+        self.book_entry = ttk.Entry(self.issue_frame, textvariable=self.book_name_str)
+        self.book_entry.insert(0, 'Book Name')
+        self.duration = tk.StringVar()
+        self.duration_lbl = ttk.Label(self.issue_frame, text="Duration")
+        self.duration_entry = ttk.Entry(self.issue_frame, textvariable=self.duration)
+        self.duration_entry.insert(0, 'No. of Days')
+        self.duration_entry.bind("<Button-1>", self.clear_entry)
+        self.submit_btn = ttk.Button(self.issue_frame, text='Issue', command=self.issue_book)
+        self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
+        self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
+        self.quit_btn = ttk.Button(self.issue_frame, style='quitbtn.TButton', text='Quit', command=self.iss.destroy)
+    
+    def widget_styles(self):
+        self.s = ttk.Style(self.iss)
+        self.s.theme_use('clam')
+        self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
+        self.s.configure('TLabel', background='#70340c', foreground='white', fieldbackground='#70340c')
+        self.s.configure('TButton', background="#894b10", foreground="white")
+        self.s.map('TButton',background=[('active','#a5570e'),('pressed','#70340c')])
+        self.s.configure('TCombobox', background="#894b10", foreground='white')
+        self.s.map('TCombobox',background=[('active','#a5570e'),('pressed','#70340c')])
+        self.s.configure('TEntry', background='white', foreground='black')
+    
+    def issue_window(self):
+        self.declare_issue_widgets()
+        self.issue_frame.grid(row=0, column=0, ipadx=10)
+        self.mem_combobox.grid(row=2, column=0, padx=10, pady=20)
+        self.member_entry.grid(row=2, column=1, pady=20, padx=15)
+        self.book_combobox.grid(row=3, column=0, padx=10, pady=20)
+        self.book_entry.grid(row=3, column=1, padx=15, pady=20)
+        self.duration_lbl.grid(row=4, column=0, padx=10, pady=20)
+        self.duration_entry.grid(row=4, column=1, padx=15, pady=20)
+        self.submit_btn.grid(row=6, column=0, pady=10)
+        self.quit_btn.grid(row=6, column=1, pady=10)
+
+    def retrieve_values(self):
+        self.book_id, self.books, self.member_id, self.members = sql3.get_issue_details()
+
+    def check_member(self, event):
+        if self.mem_combobox.get()!='Pick Member ID':
+            self.member_id_str = self.mem_combobox.get()
+            self.member_name_str = self.members[self.member_id_str]
+            self.member_entry.delete(0, tk.END)
+            self.member_entry.insert(0, self.member_name_str)
+    
+    def check_book(self, event):
+        if self.book_combobox.get()!='Pick Book ID':
+            self.book_id_str = self.book_combobox.get()
+            self.book_name_str = self.books[self.book_id_str]
+            self.book_entry.delete(0, tk.END)
+            self.book_entry.insert(0, self.book_name_str)
+            
+    def clear_entry(self, event):
+        self.duration_entry.delete(0,tk.END)
+
+    def issue_book(self):
+        if self.mem_combobox.get()=='Pick Member ID' or self.book_combobox.get()=='Pick Book ID':
+            messagebox.showwarning('Value is not selected',"Select Both Id's")
+        else:
+            messagebox.showinfo('Connecting to Database','Issueing Book')
+            self.dur = self.duration_entry.get()
+            if sql3.issue_book(self.member_id_str,self.book_id_str,self.dur)==True:
+                messagebox.showinfo('Connection Successsful','Book Issued')
+                #del self.members[self.member_id_str]
+                del self.books[self.book_id_str]
+                self.return_date = sql3.get_return_date(self.member_id_str, self.book_id_str)
+                messagebox.showinfo('Return Date','Return by '+self.return_date)
+            else:
+                messagebox.showinfo('Connection Unsuccessful','Database is locked')
+        self.refresh_window_iss()
+
+    def refresh_window_iss(self):
+        self.iss.destroy()
+        self.issue_window()
+        self.iss.lift()   
+
 
 class Member_Register:
 
@@ -68,9 +165,9 @@ class Member_Register:
         if len(self.mFname)==0 or len(self.mLname)==0 or len(self.mMob)==0 or len(self.mEmail)==0 or len(self.mAddress)==0:
             messagebox.showerror("Value Error","Please Enter All Values")
         elif(sql3.member_reg(self.mFname, self.mLname, self.mMob, self.mEmail, self.mAddress)):
-           messagebox.showinfo("SQL Connected","Data Inserted Succesfully!")
+           messagebox.showinfo("SQL Connected","Data Inserted Successfully!")
         else:
-            messagebox.showerror("Connection Unsuccesful","Database not found")
+            messagebox.showerror("Connection Unsuccessful","Database not found")
         self.clear_entry()
 
     def clear_entry(self):
@@ -92,13 +189,13 @@ class Delete_Member:
     def declare_member_del_widgets(self):
         self.mdel = tk.Tk()
         self.mdel.title('Member Delete')
-        self.mdel.register(False, False)
+        self.mdel.resizable(False, False)
         self.retieve_members()
         self.widget_styles()
         self.member_delete_frame = ttk.Frame(self.mdel)
-        self.member_id_str = tk.StringVar()
+        self.member_id_str = tk.StringVar(self.mdel)
+        self.member_id_str.set('Pick Member ID')
         self.combo_box = ttk.Combobox(self.member_delete_frame, width=27, textvariable=self.member_id_str, values=self.memberids)
-        self.combo_box.set('Pick Member ID')
         self.combo_box.bind("<<ComboboxSelected>>", self.check_member)
         self.member_name_str = tk.StringVar()
         self.del_member_entry = ttk.Entry(self.member_delete_frame, textvariable=self.member_name_str)
@@ -144,10 +241,10 @@ class Delete_Member:
         else:
             messagebox.showinfo('Connecting to Database','Deleting Member')
             if sql3.delete_member(self.member_id_str)==True:
-                messagebox.showinfo('Connection Succesful','Member Deleted')
+                messagebox.showinfo('Connection Successful','Member Deleted')
                 del self.memberNamedict[self.member_id_str]
             else:
-                messagebox.showerror('Connection UNsuccesful','Database is locked')
+                messagebox.showerror('Connection Unsuccessful','Database is locked')
         self.refresh_window_mdel()
     
     def refresh_window_mdel(self):
@@ -158,9 +255,9 @@ class Delete_Member:
     def delete_all_members(self):
         if messagebox.askyesno('Deleting all Records','Are you sure you want to proceed?'):
             if sql3.delete_allm():
-                messagebox.showinfo('Deleted Records','All records deleted successfully')
+                messagebox.showinfo('Deleted Records','All records deleted Successsfully')
             else:
-                messagebox.showerror('Deletion Unsuccessful','Could not delete records')
+                messagebox.showerror('Deletion Unsuccesssful','Could not delete records')
         self.refresh_window_mdel()
 
 class Member_View:
@@ -278,9 +375,9 @@ class Book_Register:
         if (len(self.book_name_entry.get())==0 or len(self.book_author_entry.get())==0 or len(self.book_isbn_entry.get())==0 or len(self.book_price_entry.get())==0):
             messagebox.showerror("Value Error","Please Enter All Values")
         elif (sql3.add_book_sql(self.book_name,self.author,self.isbn,self.price)):
-            messagebox.showinfo("SQL Connected","Data Inserted Succesfully!")
+            messagebox.showinfo("SQL Connected","Data Inserted Successfully!")
         else:
-            messagebox.showerror("Connection Unsuccesful","Database not found")
+            messagebox.showerror("Connection Unsuccessful","Database not found")
         self.clear_entry()
     
     def clear_entry(self):
@@ -409,10 +506,10 @@ class Book_Delete:
         else:
             messagebox.showinfo("Connecting to Database","Deleting Book")
             if sql3.delete_book(self.book_id_str)==True:
-                messagebox.showinfo('Connection Succesful','Book Deleted')
+                messagebox.showinfo('Connection Successful','Book Deleted')
                 del self.bookdict[self.book_id_str]
             else:
-                messagebox.showerror('Connection Unsuccesful','Database is locked')
+                messagebox.showerror('Connection Unsuccessful','Database is locked')
         self.refresh_window_bdel()
 
     def refresh_window_bdel(self):
@@ -423,10 +520,11 @@ class Book_Delete:
     def delete_all_books(self):
         if messagebox.askyesno('Deleting all Records','Are you sure you want to proceed?'):
             if sql3.delete_all():
-                messagebox.showinfo('Deleted Records','All records deleted successfully')
+                messagebox.showinfo('Deleted Records','All records deleted Successsfully')
             else:
-                messagebox.showerror('Deletion Unsuccessful','Could not delete records')
+                messagebox.showerror('Deletion Unsuccesssful','Could not delete records')
         self.refresh_window_bdel()
+
 
 class MainWindow:
 
@@ -459,7 +557,7 @@ class MainWindow:
 
         self.bookIsR_menu = tk.Menu(self.menuBar, bg='#70340c', activebackground='#a5570e', tearoff=0)
         self.menuBar.add_cascade(label="Book Issue/Return", menu=self.bookIsR_menu)
-        self.bookIsR_menu.add_command(label="Issue Books")
+        self.bookIsR_menu.add_command(label="Issue Books", command=self.book_issue)
         self.bookIsR_menu.add_command(label="Return Books")
 
         self.bookMembers_menu = tk.Menu(self.menuBar, bg='#70340c', activebackground='#a5570e', tearoff=0)
@@ -477,6 +575,7 @@ class MainWindow:
         self.member_reg = Member_Register()
         self.member_del = Delete_Member()
         self.member_view = Member_View()
+        self.issue_book = Issue()
     
     def main_window(self):
 
@@ -500,6 +599,9 @@ class MainWindow:
     
     def view_member(self):
         self.member_view.view_members_window()
+    
+    def book_issue(self):
+        self.issue_book.issue_window()
 
 
 def main():

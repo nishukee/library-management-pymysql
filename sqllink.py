@@ -127,18 +127,40 @@ def export_members(export_file_path):
     con.close()
 
 def get_issue_details():
-    book_id,books = get_del_book_details()
+    book_id,books = get_avail_book_details()
     member_id,members = get_del_member_details()
     return book_id, books, member_id, members
 
-def issue_book(book_id, member_id):
+def get_avail_book_details():
+    con = check_table()
+    con = check_table()
+    books_del_obj = con.execute('Select book_id,book_name from book\
+                                    where availability = "Available";')
+    books = {}
+    book_id = []
+    for row in books_del_obj:
+        books[row[0]] = row[1]
+        book_id.append(row[0])
+    con.close()
+    return book_id, books
+ 
+def issue_book(member_id, book_id, duration):
     con = check_table()
     avail = 'Issued'
     con.execute("INSERT INTO book_status(book_id, member_id, issue_date, return_date, availability)\
-                    VALUES('"+book_id+"','"+member_id+"', date('now','localtime'), date('now','localtime','+15 days'), '"+avail+"');")
+                    VALUES('"+book_id+"','"+member_id+"', date('now','localtime'), date('now','localtime','+"+str(duration)+" days'), '"+avail+"');")
     con.commit()
     con.close()
     return True
+
+def get_return_date(member_id,book_id):
+    con = check_table()
+    dates = con.execute("Select return_date from book_status\
+                            where member_id = '"+member_id+"' and book_id = '"+book_id+"';")
+    date = ""
+    for row in dates:
+        date = row[0]
+    return date
 
 def get_return_details():
     con = check_table()
@@ -160,7 +182,7 @@ def update_return_book_details(book_id, member_id):
 
 def get_issued_book_details():
     con = check_table()
-    issue_book_obj = con.execute('''Select book_status.book_id, book.book_name, members.fName, members.lName, book_status.issue_date, book_status.return_date
+    issue_book_obj = con.execute('''Select book_status.book_id, book.book_name, members.fName || " " || members.lName as "Full Name", book_status.issue_date, book_status.return_date
                                     from book_status left join book using(book_id)
                                     left join members using(member_id);''')
     issue_book_details = []
@@ -203,7 +225,7 @@ def check_table():
         return conn
 con=check_table()
 #cur = con.execute("SELECT * FROM book;")
-cur = get_member_details()
-for row in cur:
-    print(row)
+#cur = get_member_details()
+#cur = get_return_date('PrS-2910','TH-ST-97-238')
+#print(cur)
 con.close()
