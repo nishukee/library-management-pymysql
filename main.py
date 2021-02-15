@@ -10,6 +10,7 @@ class Issue:
         self.iss = tk.Tk()
         self.iss.title('Issue Book')
         self.iss.resizable(False, False)
+        self.iss.geometry("+120+50")
         self.widget_styles()
         self.retrieve_values()
         self.issue_frame = ttk.Frame(self.iss)
@@ -44,7 +45,7 @@ class Issue:
         self.s.configure('TLabel', background='#70340c', foreground='white', fieldbackground='#70340c')
         self.s.configure('TButton', background="#894b10", foreground="white")
         self.s.map('TButton',background=[('active','#a5570e'),('pressed','#70340c')])
-        self.s.configure('TCombobox', background="#894b10", foreground='white')
+        self.s.configure('TCombobox', background="#894b10", foreground='black')
         self.s.map('TCombobox',background=[('active','#a5570e'),('pressed','#70340c')])
         self.s.configure('TEntry', background='white', foreground='black')
     
@@ -108,6 +109,7 @@ class Member_Register:
         self.mreg = tk.Tk()
         self.mreg.title('Member Register')
         self.mreg.resizable(False, False)
+        self.mreg.geometry("+120+50")
         self.widget_styles()
         self.add_member_frame = ttk.Frame(self.mreg)
         self.mFname_lbl = ttk.Label(self.add_member_frame, text="First Name")
@@ -190,6 +192,7 @@ class Delete_Member:
         self.mdel = tk.Tk()
         self.mdel.title('Member Delete')
         self.mdel.resizable(False, False)
+        self.mdel.geometry("+120+50")
         self.retieve_members()
         self.widget_styles()
         self.member_delete_frame = ttk.Frame(self.mdel)
@@ -210,7 +213,7 @@ class Delete_Member:
         self.s = ttk.Style(self.mdel)
         self.s.theme_use('clam')
         self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
-        self.s.configure('TCombobox', background="#894b10", foreground='white')
+        self.s.configure('TCombobox', background="#894b10", foreground='black')
         self.s.map('TCombobox',background=[('active','#a5570e'),('pressed','#70340c')])
         self.s.configure('TEntry', background='white', foreground='black')
         self.s.configure('TButton', background="#894b10", foreground="white")
@@ -266,6 +269,7 @@ class Member_View:
         self.mview = tk.Tk()
         self.mview.title('Memebrs Table')
         self.mview.resizable(False, False)
+        self.mview.geometry("+120+50")
         self.widget_styles()
         self.view_member_frame = ttk.Frame(self.mview)
         self.cols = ('Member ID','Name','Mobile', 'Email', 'Address')
@@ -324,6 +328,7 @@ class Book_Register:
         self.breg = tk.Tk()
         self.breg.title('Book Register')
         self.breg.resizable(False, False)
+        self.breg.geometry("+120+50")
         self.widget_styles()
         self.add_book_frame = ttk.Frame(self.breg)
         self.book_name_lbl = ttk.Label(self.add_book_frame, text="Book Name")
@@ -399,6 +404,7 @@ class Book_View:
         self.bview = tk.Tk()
         self.bview.title('Books Table')
         self.bview.resizable(False, False)
+        self.bview.geometry("+120+50")
         self.widget_styles()
         self.view_book_frame = ttk.Frame(self.bview)
         self.cols = ('Book ID','Book Name','Author','ISBN','Price','Status')
@@ -455,6 +461,7 @@ class Book_Delete:
         self.bdel = tk.Tk()
         self.bdel.title('Delete Books')
         self.bdel.resizable(False, False)
+        self.bdel.geometry("+120+50")
         self.retrieve_books()
         self.widget_styles()
         self.book_delete_frame = ttk.Frame(self.bdel)
@@ -475,7 +482,7 @@ class Book_Delete:
         self.s = ttk.Style(self.bdel)
         self.s.theme_use('clam')
         self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
-        self.s.configure('TCombobox', background="#894b10", foreground='white')
+        self.s.configure('TCombobox', background="#894b10", foreground='black')
         self.s.map('TCombobox',background=[('active','#a5570e'),('pressed','#70340c')])
         self.s.configure('TEntry', background='white', foreground='black')
         self.s.configure('TButton', background="#894b10", foreground="white")
@@ -525,6 +532,121 @@ class Book_Delete:
                 messagebox.showerror('Deletion Unsuccesssful','Could not delete records')
         self.refresh_window_bdel()
 
+class Book_Status:
+
+    def declare_book_status_widgets(self):
+        self.statsview = tk.Tk()
+        self.statsview.title('Book Status')
+        self.statsview.resizable(False, False)
+        self.statsview.geometry("+120+50")
+        self.widget_styles()
+        self.view_status_frame = ttk.Frame(self.statsview)
+        self.cols = ('Book ID','Book Name','Member Name','Issue Date','Return Date')
+        self.list_status = ttk.Treeview(self.view_status_frame, columns=self.cols, show='headings', selectmode='browse')
+        for self.col in self.cols:
+            self.list_status.heading(self.col, text=self.col)
+        self.verscrlbar = ttk.Scrollbar(self.view_status_frame, orient=tk.VERTICAL, command=self.list_status.yview)
+        self.export_btn = ttk.Button(self.view_status_frame, text="Export to Excel", command=self.export_to_excel)
+        self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
+        self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
+        self.quit_view_btn = ttk.Button(self.view_status_frame,style='quitbtn.TButton', text="Quit View", command=self.statsview.destroy)
+        self.status_details = []
+        self.index = self.iid = 0
+    
+    def widget_styles(self):
+        self.s = ttk.Style(self.statsview)
+        self.s.theme_use('clam')
+        self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
+        self.s.configure('Treeview', background='#894b10', foreground='white', fieldbackground="#894b10")
+        self.s.configure('TScrollbar',background='#70340c', foreground='white')
+        self.s.map('TScollbar',background=[('pressed','white')])
+        self.s.configure('TButton', background="#894b10", foreground="white")
+        self.s.map('TButton',background=[('active','#70340c'),('pressed','"#894b10')])
+        self.s.configure('.', background='#70340c', foreground='white')
+
+    def book_status_window(self):
+        self.declare_book_status_widgets()
+        self.statsview.lift()
+        self.status_details = sql3.get_issued_book_details()
+        self.view_status_frame.grid(row=0, column=0, sticky='nsew')
+        self.list_status.grid(row=1, column=1, columnspan=6)
+        for self.i in self.list_status.get_children():
+            self.list_status.delete(self.i)
+        for self.row in self.status_details:
+            self.list_status.insert('',self.index, self.iid, values=self.row)
+            self.index = self.iid = self.index + 1
+        self.verscrlbar.grid(row=1, column=0, sticky='ns')
+        self.list_status.configure(yscrollcommand = self.verscrlbar.set)
+        self.export_btn.grid(row=3, column=2, columnspan=2, padx=20, pady=5)
+        self.quit_view_btn.grid(row=3, column=4, columnspan=2, padx=20, pady=5)
+
+    def refresh_window_statsview(self):
+        self.statsview.destroy()
+        self.book_status_window()
+        self.statsview.lift()
+    
+    def export_to_excel(self):
+        self.export_file_path = filedialog.asksaveasfilename(defaultextension='.xlsx')
+        sql3.export_stats(self.export_file_path)
+        self.refresh_window_statsview()
+
+class Record_History:
+
+    def declare_book_records_widgets(self):
+        self.recordsview = tk.Tk()
+        self.recordsview.title('Book Status')
+        self.recordsview.resizable(False, False)
+        self.recordsview.geometry("+120+50")
+        self.widget_styles()
+        self.view_records_frame = ttk.Frame(self.recordsview)
+        self.cols = ('Book ID','Book Name','Member ID','Member Name','Issue Date','Return Date')
+        self.list_records = ttk.Treeview(self.view_records_frame, columns=self.cols, show='headings', selectmode='browse')
+        for self.col in self.cols:
+            self.list_records.heading(self.col, text=self.col)
+        self.verscrlbar = ttk.Scrollbar(self.view_records_frame, orient=tk.VERTICAL, command=self.list_records.yview)
+        self.export_btn = ttk.Button(self.view_records_frame, text="Export to Excel", command=self.export_to_excel)
+        self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
+        self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
+        self.quit_view_btn = ttk.Button(self.view_records_frame,style='quitbtn.TButton', text="Quit View", command=self.recordsview.destroy)
+        self.records_details = []
+        self.index = self.iid = 0
+    
+    def widget_styles(self):
+        self.s = ttk.Style(self.recordsview)
+        self.s.theme_use('clam')
+        self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
+        self.s.configure('Treeview', background='#894b10', foreground='white', fieldbackground="#894b10")
+        self.s.configure('TScrollbar',background='#70340c', foreground='white')
+        self.s.map('TScollbar',background=[('pressed','white')])
+        self.s.configure('TButton', background="#894b10", foreground="white")
+        self.s.map('TButton',background=[('active','#70340c'),('pressed','"#894b10')])
+        self.s.configure('.', background='#70340c', foreground='white')
+
+    def book_records_window(self):
+        self.declare_book_records_widgets()
+        self.recordsview.lift()
+        self.records_details = sql3.get_issued_book_details()
+        self.view_records_frame.grid(row=0, column=0, sticky='nsew')
+        self.list_records.grid(row=1, column=1, columnspan=6)
+        for self.i in self.list_records.get_children():
+            self.list_records.delete(self.i)
+        for self.row in self.records_details:
+            self.list_records.insert('',self.index, self.iid, values=self.row)
+            self.index = self.iid = self.index + 1
+        self.verscrlbar.grid(row=1, column=0, sticky='ns')
+        self.list_records.configure(yscrollcommand = self.verscrlbar.set)
+        self.export_btn.grid(row=3, column=2, columnspan=2, padx=20, pady=5)
+        self.quit_view_btn.grid(row=3, column=4, columnspan=2, padx=20, pady=5)
+
+    def refresh_window_recordsview(self):
+        self.recordsview.destroy()
+        self.book_records_window()
+        self.recordsview.lift()
+    
+    def export_to_excel(self):
+        self.export_file_path = filedialog.asksaveasfilename(defaultextension='.xlsx')
+        sql3.export_records(self.export_file_path)
+        self.refresh_window_recordsview()
 
 class MainWindow:
 
@@ -553,7 +675,8 @@ class MainWindow:
         self.bookOp_menu.add_command(label="Register Books to Database", command=self.add_book)
         self.bookOp_menu.add_command(label="View Book List", command=self.view_book)
         self.bookOp_menu.add_command(label="Delete Books from Database", command=self.delete_book)
-        self.bookOp_menu.add_command(label="Book Status")
+        self.bookOp_menu.add_command(label="Book Status", command=self.book_status)
+        self.bookOp_menu.add_command(label="Record Histroy", command=self.book_history)
 
         self.bookIsR_menu = tk.Menu(self.menuBar, bg='#70340c', activebackground='#a5570e', tearoff=0)
         self.menuBar.add_cascade(label="Book Issue/Return", menu=self.bookIsR_menu)
@@ -576,6 +699,8 @@ class MainWindow:
         self.member_del = Delete_Member()
         self.member_view = Member_View()
         self.issue_book = Issue()
+        self.status_book = Book_Status()
+        self.records = Record_History()
     
     def main_window(self):
 
@@ -602,6 +727,12 @@ class MainWindow:
     
     def book_issue(self):
         self.issue_book.issue_window()
+    
+    def book_status(self):
+        self.status_book.book_status_window()
+    
+    def book_history(self):
+        self.records.book_records_window()
 
 
 def main():

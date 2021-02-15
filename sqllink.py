@@ -148,9 +148,13 @@ def issue_book(member_id, book_id, duration):
     con = check_table()
     avail = 'Issued'
     con.execute("INSERT INTO book_status(book_id, member_id, issue_date, return_date, availability)\
-                    VALUES('"+book_id+"','"+member_id+"', date('now','localtime'), date('now','localtime','+"+str(duration)+" days'), '"+avail+"');")
+                    VALUES('"+book_id+"','"+member_id+"', date('now','localtime'), date('now','localtime','+"+duration+" days'), '"+avail+"');")
+    con.commit()
+    con.execute('Update book set availability = "Issued"\
+                    where book_id = "'+book_id+'";')
     con.commit()
     con.close()
+    write_to_records(member_id, book_id, duration)
     return True
 
 def get_return_date(member_id,book_id):
@@ -191,6 +195,77 @@ def get_issued_book_details():
     con.close()
     return issue_book_details
 
+def export_stats(export_file_path):
+    dict_stats = {'Book ID': [], 'Book Name': [], 'Member Name': [], 'Issue Date': [], 'Return Date': []}
+    rows = get_issued_book_details()
+    for row in rows:
+        dict_stats['Book ID'].append(row[0])
+        dict_stats['Book Name'].append(row[1])
+        dict_stats['Member Name'].append(row[2])
+        dict_stats['Issue Date'].append(row[3])
+        dict_stats['Return Date'].append(row[4])
+    df = pd.DataFrame(dict_stats, columns = ['Book ID', 'Book Name', 'Member Name', 'Issue Date', 'Return Date'])
+    df.to_excel(export_file_path, index=False, header=True)
+
+def write_to_records(member_id,book_id,duration):
+    conn = check_table()
+    con = check_records()
+    mem = conn.execute('Select fName || " " || lName as "Full Name" from members\
+                            where member_id = "'+member_id+'";')
+    member_name = ""
+    for row in mem:
+        member_name = row[0]
+    bname = conn.execute('Select book_name from book\
+                            where book_id = "'+book_id+'";')
+    book_name = ""
+    for row in bname:
+        book_name = row[0]
+    con.execute("Insert into records(book_id,book_name,member_id,member_name,issue_date,return_date)\
+                    values('"+book_id+"','"+book_name+"','"+member_id+"','"+member_name+"', date('now','localtime'), date('now','localtime','+"+duration+" days'));")
+    con.commit()
+    con.close()
+    conn.close()
+
+def get_record_details():
+    con = check_records()
+    rec_obj = con.execute('Select book_id,book_name,member_id,member_name,issue_date,return_date from records;')
+    records = []
+    for row in rec_obj:
+        records.append(row)
+    con.close()
+    return records
+
+def export_records(export_file_path):
+    con = check_records()
+    dict_records = {'Record ID': [],'Book ID': [], 'Book Name': [],'Member ID': [], 'Member Name': [], 'Issue Date': [], 'Return Date': []}
+    rows = con.execute('Select * from records;')
+    for row in rows:
+        dict_records['Record ID'].append(row[0])
+        dict_records['Book ID'].append(row[1])
+        dict_records['Book Name'].append(row[2])
+        dict_records['Member ID'].append(row[3])
+        dict_records['Member Name'].append(row[4])
+        dict_records['Issue Date'].append(row[5])
+        dict_records['Return Date'].append(row[6])
+    df = pd.DataFrame(dict_records, columns = ['Record ID','Book ID', 'Book Name', 'Member ID', 'Member Name', 'Issue Date', 'Return Date'])
+    df.to_excel(export_file_path, index=False, header=True)
+
+def check_records():
+    try:
+        con = s3.connect('record.db')
+        con.execute("""CREATE TABLE IF NOT EXISTS records(
+                        record_id integer PRIMARY KEY AUTOINCREMENT,
+                        book_id text NOT NULL,
+                        book_name text NOT NULL,
+                        member_id text NOT NULL,
+                        member_name text NOT NULL,
+                        issue_date text NOT NULL,
+                        return_date text NOT NULL);""")
+    except:
+        print("No Databse found")
+    else:
+        return con
+
 def check_table():
     try:
         conn = s3.connect('library.db')
@@ -201,8 +276,7 @@ def check_table():
 	                    isbn	text NOT NULL,
 	                    price	real NOT NULL,
 	                    availability text NOT NULL DEFAULT 'Available',
-	                    PRIMARY KEY(book_id)
-                        FOREIGN KEY(availability) REFERENCES book_status(availability) ON UPDATE CASCADE);""")
+	                    PRIMARY KEY(book_id));""")
         conn.execute("""CREATE TABLE IF NOT EXISTS members(
                         member_id text NOT NULL,
                         fName text NOT NULL,
@@ -224,6 +298,7 @@ def check_table():
     else:
         return conn
 con=check_table()
+conn=check_records()
 #cur = con.execute("SELECT * FROM book;")
 #cur = get_member_details()
 #cur = get_return_date('PrS-2910','TH-ST-97-238')
