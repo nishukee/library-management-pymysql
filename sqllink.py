@@ -1,7 +1,11 @@
+# This is the backend of the application. Here all data creation and manipulation inside the databes takes place.
+
+#Following are the packages used
 import sqlite3 as s3
 from sqlite3 import OperationalError
 import random as ran
 import pandas as pd
+from datetime import datetime
 
 def add_book_sql(book_name,book_author,book_isbn,book_price):
     con = check_table()
@@ -166,22 +170,51 @@ def get_return_date(member_id,book_id):
         date = row[0]
     return date
 
+
+def get_return_date_details(member_id,book_id):
+    con = check_table()
+    dates = con.execute("Select return_date from book_status\
+                            where member_id = '"+member_id+"' and book_id = '"+book_id+"';")
+    return_date_str = ""
+    for row in dates:
+        return_date_str = row[0]
+    return_date = datetime.strptime(return_date_str,"%Y-%m-%d")
+    now_date = datetime.now()
+    difference = return_date - now_date
+    if difference.days > 0:
+        due = "before"
+    elif difference.days < 0:
+        due = "after"
+    else:
+        due = "on"
+    return difference.days,due,return_date_str
+
 def get_return_details():
     con = check_table()
     member_id = []
+    book_id = []
     members = {}
-    members_obj = con.execute('Select bs.member_id, m.fName, m.lName from book_status bs inner join members m \
+    books = {}
+    members_obj = con.execute('Select bs.member_id, m.fName || " " ||  m.lName as "Full Name" from book_status bs inner join members m \
                                 using(member_id);')
     for row in members_obj:
-        members[row[0]]=row[1]+' '+row[2]
+        members[row[0]]=row[1]
         member_id.append(row[0])
+    books_obj = con.execute('Select bs.book_id, b.book_name from book_status bs inner join book b\
+                                using(book_id);')
+    for row in books_obj:
+        books[row[0]]=row[1]
+        book_id.append(row[0])
     con.close()
-    return member_id, members
+    return member_id, members, book_id, books
 
 def update_return_book_details(book_id, member_id):
     con = check_table()
-    con.execute('Update books set availability = "Available" where book_id = "'+book_id+'";')
+    con.execute('Update book set availability = "Available" where book_id = "'+book_id+'";')
+    con.commit()
     con.execute('Delete from book_status where member_id = "'+member_id+'" and book_id = "'+book_id+'";')
+    con.commit()
+    con.close()
     return True
 
 def get_issued_book_details():
@@ -252,7 +285,7 @@ def export_records(export_file_path):
 
 def check_records():
     try:
-        con = s3.connect('record.db')
+        con = s3.connect('databases/record.db')
         con.execute("""CREATE TABLE IF NOT EXISTS records(
                         record_id integer PRIMARY KEY AUTOINCREMENT,
                         book_id text NOT NULL,
@@ -268,7 +301,7 @@ def check_records():
 
 def check_table():
     try:
-        conn = s3.connect('library.db')
+        conn = s3.connect('databases/library.db')
         conn.execute("""CREATE TABLE IF NOT EXISTS book(
                         book_id	text NOT NULL,
 	                    book_name	text NOT NULL,
@@ -303,4 +336,3 @@ conn=check_records()
 #cur = get_member_details()
 #cur = get_return_date('PrS-2910','TH-ST-97-238')
 #print(cur)
-con.close()

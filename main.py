@@ -1,8 +1,15 @@
+# This is a library management program for keeping track of books being issued and returned to the library along with details of the books and library memebrs
+
+# The following are the packages used in this application
 import tkinter as tk
 from tkinter import messagebox, filedialog
 from tkinter import ttk
 from PIL import ImageTk, Image
+# This links to the backend of the program
 import sqllink as sql3
+
+# Below lies the functionalites of issueing/returning books to the library
+#To Issue a book to member
 
 class Issue:
 
@@ -102,6 +109,163 @@ class Issue:
         self.issue_window()
         self.iss.lift()   
 
+# To return book to library
+
+class Return:
+
+    def declare_return_widgets(self):
+        self.ret = tk.Tk()
+        self.ret.title('Return Book')
+        self.ret.resizable(False, False)
+        self.ret.geometry("+120+50")
+        self.widget_styles()
+        self.retrieve_values()
+        self.return_frame = ttk.Frame(self.ret)
+        self.member_id_str = tk.StringVar()
+        self.mem_combobox = ttk.Combobox(self.return_frame, width=17, textvariable=self.member_id_str, values=self.member_id)
+        self.mem_combobox.set('Pick Member ID')
+        self.mem_combobox.bind("<<ComboboxSelected>>", self.check_member)
+        self.member_name_str = tk.StringVar()
+        self.member_entry = ttk.Entry(self.return_frame, textvariable=self.member_name_str)
+        self.member_entry.insert(0, 'Member Name')
+        self.book_id_str = tk.StringVar()
+        self.book_combobox = ttk.Combobox(self.return_frame, width=17, textvariable=self.book_id_str, values=self.book_id)
+        self.book_combobox.set('Pick Book ID')
+        self.book_combobox.bind("<<ComboboxSelected>>", self.check_book)
+        self.book_name_str = tk.StringVar()
+        self.book_entry = ttk.Entry(self.return_frame, textvariable=self.book_name_str)
+        self.book_entry.insert(0, 'Book Name')
+        self.ret_label_str = tk.StringVar()
+        self.ret_label_str.set(" ")
+        self.ret_label = ttk.Label(self.return_frame, text=" ")
+        self.submit_btn = ttk.Button(self.return_frame, text='Return', command=self.return_book)
+        self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
+        self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
+        self.quit_btn = ttk.Button(self.return_frame, style='quitbtn.TButton', text='Quit', command=self.ret.destroy)
+
+
+    def widget_styles(self):
+        self.s = ttk.Style(self.ret)
+        self.s.theme_use('clam')
+        self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
+        self.s.configure('TLabel', background='#70340c', foreground='white', fieldbackground='#70340c')
+        self.s.configure('TButton', background="#894b10", foreground="white")
+        self.s.map('TButton',background=[('active','#a5570e'),('pressed','#70340c')])
+        self.s.configure('TCombobox', background="#894b10", foreground='black')
+        self.s.map('TCombobox',background=[('active','#a5570e'),('pressed','#70340c')])
+        self.s.configure('TEntry', background='white', foreground='black')
+
+    def ret_window(self):
+        self.declare_return_widgets()
+        self.return_frame.grid(row=0, column=0, ipadx=10)
+        self.mem_combobox.grid(row=2, column=0, padx=10, pady=20)
+        self.member_entry.grid(row=2, column=1, pady=20, padx=15)
+        self.book_combobox.grid(row=3, column=0, padx=10, pady=20)
+        self.book_entry.grid(row=3, column=1, pady=20, padx=15)
+        self.ret_label.grid(row=4, column=0, columnspan=2, pady=20)
+        self.submit_btn.grid(row=6, column=0, pady=10)
+        self.quit_btn.grid(row=6, column=1, pady=10)
+
+    def retrieve_values(self):
+        self.member_id, self.members, self.book_id, self.books = sql3.get_return_details()    
+
+    def check_member(self, event):
+        if self.mem_combobox.get()!='Pick Member ID':
+            self.member_id_str = self.mem_combobox.get()
+            self.member_name_str = self.members[self.member_id_str]
+            self.member_entry.delete(0, tk.END)
+            self.member_entry.insert(0, self.member_name_str)
+
+    def check_book(self, event):
+        if self.book_combobox.get()!='Pick Book ID':
+            self.book_id_str = self.book_combobox.get()
+            self.book_name_str = self.books[self.book_id_str]
+            self.book_entry.delete(0, tk.END)
+            self.book_entry.insert(0, self.book_name_str)
+            self.diff,self.due,self.ret_date_str = sql3.get_return_date_details(self.mem_combobox.get(),self.book_combobox.get())
+            if self.due == "before" or self.due == "after":
+                print("test2")
+                self.ret_label.config(text = "Returning "+str(abs(self.diff))+" days "+self.due+" due date "+self.ret_date_str)
+            elif self.due == "on":
+                print("test1")
+                self.ret_label.config(text = "Returning on due date "+self.ret_date_str)
+    
+    def return_book(self):
+        if self.mem_combobox.get()=='Pick Member ID' or self.book_combobox.get()=='Pick Book ID':
+            messagebox.showwarning('Value is not selected',"Select Both Id's")
+        else:
+            messagebox.showinfo('Connecting to Database','Returning Book')
+            if sql3.update_return_book_details(self.book_combobox.get(),self.mem_combobox.get()):
+                messagebox.showinfo('Connection Successful','Book Returned')
+        self.refresh_window_ret()
+    
+    def refresh_window_ret(self):
+        self.ret.destroy()
+        self.ret_window()
+        self.ret.lift()
+
+# To view the status of issued books ie., thier issued and return details and which member has taken the book
+
+class Issued_Status:
+
+    def declare_book_status_widgets(self):
+        self.statsview = tk.Tk()
+        self.statsview.title('Issued Status')
+        self.statsview.resizable(False, False)
+        self.statsview.geometry("+120+50")
+        self.widget_styles()
+        self.view_status_frame = ttk.Frame(self.statsview)
+        self.cols = ('Book ID','Book Name','Member Name','Issue Date','Return Date')
+        self.list_status = ttk.Treeview(self.view_status_frame, columns=self.cols, show='headings', selectmode='browse')
+        for self.col in self.cols:
+            self.list_status.heading(self.col, text=self.col)
+        self.verscrlbar = ttk.Scrollbar(self.view_status_frame, orient=tk.VERTICAL, command=self.list_status.yview)
+        self.export_btn = ttk.Button(self.view_status_frame, text="Export to Excel", command=self.export_to_excel)
+        self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
+        self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
+        self.quit_view_btn = ttk.Button(self.view_status_frame,style='quitbtn.TButton', text="Quit View", command=self.statsview.destroy)
+        self.status_details = []
+        self.index = self.iid = 0
+    
+    def widget_styles(self):
+        self.s = ttk.Style(self.statsview)
+        self.s.theme_use('clam')
+        self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
+        self.s.configure('Treeview', background='#894b10', foreground='white', fieldbackground="#894b10")
+        self.s.configure('TScrollbar',background='#70340c', foreground='white')
+        self.s.map('TScollbar',background=[('pressed','white')])
+        self.s.configure('TButton', background="#894b10", foreground="white")
+        self.s.map('TButton',background=[('active','#70340c'),('pressed','"#894b10')])
+        self.s.configure('.', background='#70340c', foreground='white')
+
+    def issue_status_window(self):
+        self.declare_book_status_widgets()
+        self.statsview.lift()
+        self.status_details = sql3.get_issued_book_details()
+        self.view_status_frame.grid(row=0, column=0, sticky='nsew')
+        self.list_status.grid(row=1, column=1, columnspan=6)
+        for self.i in self.list_status.get_children():
+            self.list_status.delete(self.i)
+        for self.row in self.status_details:
+            self.list_status.insert('',self.index, self.iid, values=self.row)
+            self.index = self.iid = self.index + 1
+        self.verscrlbar.grid(row=1, column=0, sticky='ns')
+        self.list_status.configure(yscrollcommand = self.verscrlbar.set)
+        self.export_btn.grid(row=3, column=2, columnspan=2, padx=20, pady=5)
+        self.quit_view_btn.grid(row=3, column=4, columnspan=2, padx=20, pady=5)
+
+    def refresh_window_statsview(self):
+        self.statsview.destroy()
+        self.issue_status_window()
+        self.statsview.lift()
+    
+    def export_to_excel(self):
+        self.export_file_path = filedialog.asksaveasfilename(defaultextension='.xlsx')
+        sql3.export_stats(self.export_file_path)
+        self.refresh_window_statsview()
+
+#The following are functionalites of Members of the library
+# To register a new member to the database
 
 class Member_Register:
 
@@ -185,6 +349,7 @@ class Member_Register:
         self.add_member_window()
         self.mreg.lift()
 
+# To delete members from the database
 
 class Delete_Member:
 
@@ -227,9 +392,9 @@ class Delete_Member:
         self.member_delete_frame.grid(row=0, column=0, ipadx=10)
         self.combo_box.grid(row=2, column=0, padx=10, pady=20)
         self.del_member_entry.grid(row=2, column=1, pady=20, padx=15)
-        self.del_btn.grid(row=2, column=3)
+        self.del_btn.grid(row=2, column=3, pady=10)
         self.quit_del_btn.grid(row=4, column=0, columnspan=2, padx=50)
-        self.del_all_btn.grid(row=4, column=3)
+        self.del_all_btn.grid(row=4, column=3, pady=10)
     
     def check_member(self, event):
         if self.combo_box.get()!='Pick Member ID':
@@ -262,6 +427,8 @@ class Delete_Member:
             else:
                 messagebox.showerror('Deletion Unsuccesssful','Could not delete records')
         self.refresh_window_mdel()
+
+# To view a list of all members and their details in the database
 
 class Member_View:
 
@@ -321,6 +488,9 @@ class Member_View:
         self.export_file_path = filedialog.asksaveasfilename(defaultextension='.xlsx')
         sql3.export_members(self.export_file_path)
         self.refresh_window_mview()
+
+# Below are all functionalites of Books of the library
+# To register a new book to the database
 
 class Book_Register:
 
@@ -397,6 +567,7 @@ class Book_Register:
         self.add_book_window()
         self.breg.lift()
 
+# To View inforamtion about all books in the databse
 
 class Book_View:
 
@@ -456,6 +627,8 @@ class Book_View:
         sql3.export_books(self.export_file_path)
         self.refresh_window_bview()
 
+# This class is for deleting a book from the database
+
 class Book_Delete:
     def declare_book_delete_widgets(self):
         self.bdel = tk.Tk()
@@ -496,9 +669,9 @@ class Book_Delete:
         self.book_delete_frame.grid(row=0, column=0, ipadx=10)
         self.combo_box.grid(row=2, column=0, padx=10, pady=20)
         self.del_book_entry.grid(row=2, column=1, pady=20, padx=15)
-        self.del_btn.grid(row=2, column=3)
+        self.del_btn.grid(row=2, column=3, pady=10)
         self.quit_del_btn.grid(row=4, column=0,columnspan=2, padx=50)
-        self.del_all_btn.grid(row=4, column=3)
+        self.del_all_btn.grid(row=4, column=3, pady=10)
             
     def check_book(self, event):
         if self.combo_box.get()!='Pick Book ID':
@@ -532,69 +705,13 @@ class Book_Delete:
                 messagebox.showerror('Deletion Unsuccesssful','Could not delete records')
         self.refresh_window_bdel()
 
-class Book_Status:
-
-    def declare_book_status_widgets(self):
-        self.statsview = tk.Tk()
-        self.statsview.title('Book Status')
-        self.statsview.resizable(False, False)
-        self.statsview.geometry("+120+50")
-        self.widget_styles()
-        self.view_status_frame = ttk.Frame(self.statsview)
-        self.cols = ('Book ID','Book Name','Member Name','Issue Date','Return Date')
-        self.list_status = ttk.Treeview(self.view_status_frame, columns=self.cols, show='headings', selectmode='browse')
-        for self.col in self.cols:
-            self.list_status.heading(self.col, text=self.col)
-        self.verscrlbar = ttk.Scrollbar(self.view_status_frame, orient=tk.VERTICAL, command=self.list_status.yview)
-        self.export_btn = ttk.Button(self.view_status_frame, text="Export to Excel", command=self.export_to_excel)
-        self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
-        self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
-        self.quit_view_btn = ttk.Button(self.view_status_frame,style='quitbtn.TButton', text="Quit View", command=self.statsview.destroy)
-        self.status_details = []
-        self.index = self.iid = 0
-    
-    def widget_styles(self):
-        self.s = ttk.Style(self.statsview)
-        self.s.theme_use('clam')
-        self.s.configure('TFrame', background='#70340c', foreground='white', fieldbackground='#70340c')
-        self.s.configure('Treeview', background='#894b10', foreground='white', fieldbackground="#894b10")
-        self.s.configure('TScrollbar',background='#70340c', foreground='white')
-        self.s.map('TScollbar',background=[('pressed','white')])
-        self.s.configure('TButton', background="#894b10", foreground="white")
-        self.s.map('TButton',background=[('active','#70340c'),('pressed','"#894b10')])
-        self.s.configure('.', background='#70340c', foreground='white')
-
-    def book_status_window(self):
-        self.declare_book_status_widgets()
-        self.statsview.lift()
-        self.status_details = sql3.get_issued_book_details()
-        self.view_status_frame.grid(row=0, column=0, sticky='nsew')
-        self.list_status.grid(row=1, column=1, columnspan=6)
-        for self.i in self.list_status.get_children():
-            self.list_status.delete(self.i)
-        for self.row in self.status_details:
-            self.list_status.insert('',self.index, self.iid, values=self.row)
-            self.index = self.iid = self.index + 1
-        self.verscrlbar.grid(row=1, column=0, sticky='ns')
-        self.list_status.configure(yscrollcommand = self.verscrlbar.set)
-        self.export_btn.grid(row=3, column=2, columnspan=2, padx=20, pady=5)
-        self.quit_view_btn.grid(row=3, column=4, columnspan=2, padx=20, pady=5)
-
-    def refresh_window_statsview(self):
-        self.statsview.destroy()
-        self.book_status_window()
-        self.statsview.lift()
-    
-    def export_to_excel(self):
-        self.export_file_path = filedialog.asksaveasfilename(defaultextension='.xlsx')
-        sql3.export_stats(self.export_file_path)
-        self.refresh_window_statsview()
+# This class is to get and display information about all records of issue/return of books
 
 class Record_History:
 
     def declare_book_records_widgets(self):
         self.recordsview = tk.Tk()
-        self.recordsview.title('Book Status')
+        self.recordsview.title('Records')
         self.recordsview.resizable(False, False)
         self.recordsview.geometry("+120+50")
         self.widget_styles()
@@ -625,7 +742,7 @@ class Record_History:
     def book_records_window(self):
         self.declare_book_records_widgets()
         self.recordsview.lift()
-        self.records_details = sql3.get_issued_book_details()
+        self.records_details = sql3.get_record_details()
         self.view_records_frame.grid(row=0, column=0, sticky='nsew')
         self.list_records.grid(row=1, column=1, columnspan=6)
         for self.i in self.list_records.get_children():
@@ -648,8 +765,39 @@ class Record_History:
         sql3.export_records(self.export_file_path)
         self.refresh_window_recordsview()
 
+# About
+
+class About:
+
+    def about_widgets(self):
+        self.abt = tk.Tk()
+        self.abt.title("About")
+        self.abt.resizable(False, False)
+        self.s = ttk.Style(self.abt)
+        self.s.theme_use('clam')
+        self.s.configure('TFrame', background='#70340c', foreground='#70340c', fieldbackground='#70340c')
+        self.s.configure('TLabel', background='#70340c', foreground='white')
+        self.s.configure('quitbtn.TButton', background="#894b10", foreground="white")
+        self.s.map('quitbtn.TButton',background=[('active','#d10c0c'),('pressed','red')])
+        self.abt_frame = ttk.Frame(self.abt)
+        self.abt_text = """
+                           Library Management Application 1.0
+                           Developed by Nishchay Nayak
+                           Developed using Python 3.9.1 using tkinter and sqlite3 packages"""
+        self.abt_label = ttk.Label(self.abt_frame, text=self.abt_text)
+        self.quit_btn = ttk.Button(self.abt_frame,style='quitbtn.TButton', text="Quit", command=self.abt.destroy)
+    
+    def about_window(self):
+        self.about_widgets()
+        self.abt.lift()
+        self.abt_frame.grid(row=0, column=0, ipadx=20)
+        self.abt_label.grid(row=1, column=1,columnspan=2, pady=10)
+        self.quit_btn.grid(row=2, column=1,columnspan=2, pady=10)
+
+# Declaring and defining the main window
 class MainWindow:
 
+    # Using contructor to initalize and decalre widgets
     def __init__(self, parent):
         self.parent = parent
         self.parent.title('Library')
@@ -675,19 +823,23 @@ class MainWindow:
         self.bookOp_menu.add_command(label="Register Books to Database", command=self.add_book)
         self.bookOp_menu.add_command(label="View Book List", command=self.view_book)
         self.bookOp_menu.add_command(label="Delete Books from Database", command=self.delete_book)
-        self.bookOp_menu.add_command(label="Book Status", command=self.book_status)
         self.bookOp_menu.add_command(label="Record Histroy", command=self.book_history)
 
         self.bookIsR_menu = tk.Menu(self.menuBar, bg='#70340c', activebackground='#a5570e', tearoff=0)
         self.menuBar.add_cascade(label="Book Issue/Return", menu=self.bookIsR_menu)
         self.bookIsR_menu.add_command(label="Issue Books", command=self.book_issue)
-        self.bookIsR_menu.add_command(label="Return Books")
+        self.bookIsR_menu.add_command(label="Return Books", command=self.return_book)
+        self.bookIsR_menu.add_command(label="Issued Status", command=self.issue_status)
 
         self.bookMembers_menu = tk.Menu(self.menuBar, bg='#70340c', activebackground='#a5570e', tearoff=0)
         self.menuBar.add_cascade(label="Library Members", menu=self.bookMembers_menu)
         self.bookMembers_menu.add_command(label="Register New Member", command=self.member_register)
         self.bookMembers_menu.add_command(label="Delete Registered Member", command=self.member_delete)
         self.bookMembers_menu.add_command(label="View Members", command=self.view_member)
+
+        self.about_menu = tk.Menu(self.menuBar, bg='#70340c', activebackground='#a5570e', tearoff=0)
+        self.menuBar.add_cascade(label="About", menu=self.about_menu)
+        self.about_menu.add_command(label="About", command=self.about_app)
 
         self.quit_btn = tk.Menu(self.menuBar, bg='#70340c', activebackground='red', tearoff=0)
         self.menuBar.add_cascade(label="Quit", menu=self.quit_btn)
@@ -699,13 +851,17 @@ class MainWindow:
         self.member_del = Delete_Member()
         self.member_view = Member_View()
         self.issue_book = Issue()
-        self.status_book = Book_Status()
+        self.status_issue = Issued_Status()
         self.records = Record_History()
+        self.returnb = Return()
+        self.about = About()
     
     def main_window(self):
 
         self.main_frame.grid(row=0, column=0, padx=10, pady=10)
         self.bg_img_lbl.place(anchor='nw')
+
+    # Calling different windows of different funcitonalities
 
     def add_book(self):
         self.book_reg.add_book_window()
@@ -728,13 +884,20 @@ class MainWindow:
     def book_issue(self):
         self.issue_book.issue_window()
     
-    def book_status(self):
-        self.status_book.book_status_window()
+    def issue_status(self):
+        self.status_issue.issue_status_window()
     
     def book_history(self):
         self.records.book_records_window()
+    
+    def return_book(self):
+        self.returnb.ret_window()
+    
+    def about_app(self):
+        self.about.about_window()
 
 
+# Main window initialization
 def main():
     root = tk.Tk()
     root.geometry('600x300')
