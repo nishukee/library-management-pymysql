@@ -900,6 +900,7 @@ class MainWindow:
 # Main window initialization
 def main():
     root = tk.Tk()
+    root.iconphoto(True, tk.PhotoImage(file='images/Book_logo.png'))
     root.geometry('600x300')
     root.configure(background='#301806')
     app = MainWindow(root)
