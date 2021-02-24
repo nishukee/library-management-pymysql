@@ -184,10 +184,8 @@ class Return:
             self.book_entry.insert(0, self.book_name_str)
             self.diff,self.due,self.ret_date_str = sql3.get_return_date_details(self.mem_combobox.get(),self.book_combobox.get())
             if self.due == "before" or self.due == "after":
-                print("test2")
                 self.ret_label.config(text = "Returning "+str(abs(self.diff))+" days "+self.due+" due date "+self.ret_date_str)
             elif self.due == "on":
-                print("test1")
                 self.ret_label.config(text = "Returning on due date "+self.ret_date_str)
     
     def return_book(self):
